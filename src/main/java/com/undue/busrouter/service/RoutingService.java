@@ -105,7 +105,7 @@ public class RoutingService {
         // Setting first solution heuristic
         RoutingSearchParameters searchParameters = main.defaultRoutingSearchParameters()
                 .toBuilder()
-                .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
+                .setFirstSolutionStrategy((FirstSolutionStrategy.Value.PARALLEL_CHEAPEST_INSERTION))
                 .setLocalSearchMetaheuristic(LocalSearchMetaheuristic.Value.GUIDED_LOCAL_SEARCH)
                 .setTimeLimit(Duration.newBuilder().setSeconds(3).build())
                 .build();
