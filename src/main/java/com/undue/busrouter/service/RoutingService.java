@@ -25,6 +25,11 @@ public class RoutingService {
         locations.addAll(dataService.getAllSchools());
         locations.addAll(dataService.getAllBusStops());
 
+        Map<String, Integer> mapLocationIdsToLocationIndex = new HashMap<>();
+        for (int i = 0; i < locations.size(); i++) {
+            mapLocationIdsToLocationIndex.put(locations.get(i).getId(), i);
+        }
+
         List<Bus> buses = dataService.getAllBuses();
         List<Student> students = dataService.getAllStudents();
 
@@ -59,22 +64,50 @@ public class RoutingService {
         // Create Routing Model
         RoutingModel routing = new RoutingModel(manager);
 
-        // Create and register a transit callback
-        final int transitCallbackIndex = routing.registerTransitCallback((long fromIndex, long toIndex) -> {
-            int fromNode = manager.indexToNode(fromIndex);
-            int toNode = manager.indexToNode(toIndex);
-            return distanceMatrix[fromNode][toNode];
-        });
+        // Create and register a transit callback.
+        final int transitCallbackIndex =
+                routing.registerTransitCallback((long fromIndex, long toIndex) -> {
+                    // Convert from routing variable Index to user NodeIndex.
+                    int fromNode = manager.indexToNode(fromIndex);
+                    int toNode = manager.indexToNode(toIndex);
+                    return distanceMatrix[fromNode][toNode];
+                });
 
-        // Define cost of each arc
+        // Define cost of each arc.
         routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
+
+        // Add Distance constraint.
+        routing.addDimension(transitCallbackIndex, 0, 400_000,
+                true, // start cumul to zero
+                "Distance");
+        RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
+        distanceDimension.setGlobalSpanCostCoefficient(100);
+
+        int[][] pickupsDeliveries = new int[students.size()][2];
+        for (int i = 0; i < students.size(); i++) {
+            pickupsDeliveries[i][0] = mapLocationIdsToLocationIndex.get(students.get(i).getSchoolId());
+            pickupsDeliveries[i][1] = mapLocationIdsToLocationIndex.get(students.get(i).getBusStopId());
+        }
+
+        // Define Transportation Requests.
+        Solver solver = routing.solver();
+        for (int[] request : pickupsDeliveries) {
+            long pickupIndex = manager.nodeToIndex(request[0]);
+            long deliveryIndex = manager.nodeToIndex(request[1]);
+            routing.addPickupAndDelivery(pickupIndex, deliveryIndex);
+            solver.addConstraint(
+                    solver.makeEquality(routing.vehicleVar(pickupIndex), routing.vehicleVar(deliveryIndex)));
+            solver.addConstraint(solver.makeLessOrEqual(
+                    distanceDimension.cumulVar(pickupIndex), distanceDimension.cumulVar(deliveryIndex)));
+        }
+
 
         // Setting first solution heuristic
         RoutingSearchParameters searchParameters = main.defaultRoutingSearchParameters()
                 .toBuilder()
                 .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PATH_CHEAPEST_ARC)
                 .setLocalSearchMetaheuristic(LocalSearchMetaheuristic.Value.GUIDED_LOCAL_SEARCH)
-                .setTimeLimit(Duration.newBuilder().setSeconds(30).build())
+                .setTimeLimit(Duration.newBuilder().setSeconds(3).build())
                 .build();
 
         // Solve the problem
