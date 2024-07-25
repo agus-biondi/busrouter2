@@ -14,8 +14,8 @@ import java.net.http.HttpResponse;
 @RequestMapping("/")
 public class Main {
     @GetMapping
-    public ResponseEntity<String> main() {
-        String message = "Main Page!";
+    public ResponseEntity<String> serverStatus() {
+        String message = "Server up!";
         return new ResponseEntity<>(message, HttpStatus.OK);
     }
 }

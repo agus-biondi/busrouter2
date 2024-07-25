@@ -1,17 +1,67 @@
 package com.undue.busrouter.service;
 
+import com.undue.busrouter.exception.ResourceNotFoundException;
 import com.undue.busrouter.model.*;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class DataService {
-    private final Map<String, School> schools = new HashMap<>();
-    private final Map<String, BusStop> busStops = new HashMap<>();
-    private final Map<String, Bus> buses = new HashMap<>();
-    private final Map<String, Student> students = new HashMap<>();
-    private final Map<String, Depot> depots = new HashMap<>();
+
+    private final Map<String, RoutingProblem> routingProblems = new ConcurrentHashMap<>();
+
+    public RoutingProblem getRoutingProblemById(String routingProblemId) {
+        RoutingProblem routingProblem = routingProblems.get(routingProblemId);
+        if (routingProblem == null) {
+            throw new ResourceNotFoundException("RoutingProblem", routingProblemId);
+        }
+        return routingProblem;
+    }
+
+    public Bus getBusFromRoutingProblem(String routingProblemId, String busId) {
+        RoutingProblem problem = getRoutingProblemById(routingProblemId);
+        Bus bus = problem.getBuses().get(busId);
+        if (bus == null) {
+            throw new ResourceNotFoundException("Bus", busId);
+        }
+        return bus;
+    }
+
+    public List<Bus> getAllBusesFromRoutingProblem(String routingProblemId) {
+        RoutingProblem problem = getRoutingProblemById(routingProblemId);
+        return new ArrayList<>(problem.getBuses().values());
+    }
+
+    public Bus addBusToRoutingProblem(String routingProblemId, Bus bus) {
+        if (bus == null) {
+            throw new IllegalArgumentException("Bus cannot be null");
+        }
+        RoutingProblem problem = getRoutingProblemById(routingProblemId);
+        bus.setId(UUID.randomUUID().toString());
+        problem.getBuses().put(bus.getId(), bus);
+        return bus;
+    }
+
+    public Bus updateBusForRoutingProblem(String routingProblemId, Bus updatedBus) {
+        if (updatedBus == null) {
+            throw new IllegalArgumentException("Bus cannot be null");
+        }
+        Bus bus = getBusFromRoutingProblem(routingProblemId, updatedBus.getId());
+        bus.copyFrom(updatedBus);
+        return bus;
+    }
+
+    public void deleteBusFromRoutingProblem(String routingProblemId, String busId) {
+        RoutingProblem problem = getRoutingProblemById(routingProblemId);
+        if (problem.getBuses().remove(busId) == null) {
+            throw new ResourceNotFoundException("Bus", busId);
+        }
+    }
+
+
+
 
     public <T> T add(T item) {
         String id = UUID.randomUUID().toString();

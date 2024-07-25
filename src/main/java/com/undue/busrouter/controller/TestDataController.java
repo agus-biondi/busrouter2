@@ -44,23 +44,23 @@ public class TestDataController {
         }
 
         // Generate bus stops
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 1; i <= 50; i++) {
             BusStop busStop = new BusStop(null, "Stop " + i, 40 + (random.nextDouble() * 0.03d), -74 + (random.nextDouble() * 0.03d), 0);
             dataService.addBusStop(busStop);
         }
 
         // Generate buses
         List<Depot> depots = dataService.getAllDepots();
-        for (int i = 1; i <= 3; i++) {
+        for (int i = 1; i <= 10; i++) {
             Depot randomDepot = depots.get(random.nextInt(depots.size()));
-            Bus bus = new Bus(null, "Bus " + i, 30, randomDepot.getId());
+            Bus bus = new Bus(null, "Bus " + i, 60, randomDepot.getId());
             dataService.addBus(bus);
         }
 
         // Generate students and assign them to schools and bus stops
         List<School> schools = dataService.getAllSchools();
         List<BusStop> busStops = dataService.getAllBusStops();
-        for (int i = 1; i <= 50; i++) {
+        for (int i = 1; i <= 450; i++) {
             School randomSchool = schools.get(random.nextInt(schools.size()));
             BusStop randomStop = busStops.get(random.nextInt(busStops.size()));
             Student student = new Student(null, "Student " + i, randomStop.getId(), randomSchool.getId());
@@ -70,22 +70,8 @@ public class TestDataController {
         return ResponseEntity.ok("Test data generated successfully");
     }
 
-    @GetMapping("/visualizationData")
-    public ResponseEntity<Map<String, Object>> getVisualizationData() {
-        Map<String, Object> data = new HashMap<>();
-        data.put("schools", dataService.getAllSchools());
-        data.put("busStops", dataService.getAllBusStops());
-        data.put("buses", dataService.getAllBuses());
-        data.put("depots", dataService.getAllDepots());
-        data.put("students", dataService.getAllStudents());
 
-        List<List<String>> routes = routingService.calculateRoutes();
-        data.put("routes", routes);
-
-        return ResponseEntity.ok(data);
-    }
-
-    @GetMapping("/calculateRoutes")
+    @GetMapping("/calculateRoute")
     public ResponseEntity<List<List<String>>> calculateRoutes() {
         List<List<String>> routes = routingService.calculateRoutes();
         return ResponseEntity.ok(routes);

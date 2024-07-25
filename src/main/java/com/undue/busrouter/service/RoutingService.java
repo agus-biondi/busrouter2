@@ -21,14 +21,9 @@ public class RoutingService {
     public List<List<String>> calculateRoutes() {
         // Gather data
         List<Location> locations = new ArrayList<>();
-        locations.addAll(dataService.getAllDepots());
-        locations.addAll(dataService.getAllSchools());
+        locations.add(dataService.getAllSchools().get(0)); //1 school
         locations.addAll(dataService.getAllBusStops());
 
-        Map<String, Integer> mapLocationIdsToLocationIndex = new HashMap<>();
-        for (int i = 0; i < locations.size(); i++) {
-            mapLocationIdsToLocationIndex.put(locations.get(i).getId(), i);
-        }
 
         List<Bus> buses = dataService.getAllBuses();
         List<Student> students = dataService.getAllStudents();
@@ -36,14 +31,16 @@ public class RoutingService {
         int vehicleNumber = buses.size();
         int nodeNumber = locations.size();
 
+
+        // Create distance matrix
+        long[][] distanceMatrix = createDistanceMatrix(locations);
+        // Create demands array
+        long[] demands = createDemands(locations, students);
+
         // Print problem size
         System.out.println("Locations: " + locations.size());
         System.out.println("Buses: " + buses.size());
         System.out.println("Students: " + students.size());
-
-        // Create distance matrix
-        long[][] distanceMatrix = createDistanceMatrix(locations);
-
         System.out.println("Locations:");
         for (Location l : locations) {
             System.out.println(l.toString());
@@ -52,12 +49,7 @@ public class RoutingService {
         for (long[] distance : distanceMatrix) {
             System.out.println(Arrays.toString(distance));
         }
-
-        // Create demands array
-        long[] demands = createDemands(locations, students);
         System.out.println("Demands: " + Arrays.toString(demands));
-
-
 
         // Create Routing Index Manager
         RoutingIndexManager manager = new RoutingIndexManager(nodeNumber, vehicleNumber, 0);
@@ -67,7 +59,6 @@ public class RoutingService {
         // Create and register a transit callback.
         final int transitCallbackIndex =
                 routing.registerTransitCallback((long fromIndex, long toIndex) -> {
-                    // Convert from routing variable Index to user NodeIndex.
                     int fromNode = manager.indexToNode(fromIndex);
                     int toNode = manager.indexToNode(toIndex);
                     return distanceMatrix[fromNode][toNode];
@@ -77,38 +68,30 @@ public class RoutingService {
         routing.setArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
 
         // Add Distance constraint.
-        routing.addDimension(transitCallbackIndex, 0, 400_000,
+        routing.addDimension(transitCallbackIndex, 0, 5000000,
                 true, // start cumul to zero
                 "Distance");
         RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
         distanceDimension.setGlobalSpanCostCoefficient(100);
 
-        int[][] pickupsDeliveries = new int[students.size()][2];
-        for (int i = 0; i < students.size(); i++) {
-            pickupsDeliveries[i][0] = mapLocationIdsToLocationIndex.get(students.get(i).getSchoolId());
-            pickupsDeliveries[i][1] = mapLocationIdsToLocationIndex.get(students.get(i).getBusStopId());
-        }
+        // Add capacity constraints
+        int demandCallbackIndex = routing.registerUnaryTransitCallback((long fromIndex) -> {
+            int fromNode = manager.indexToNode(fromIndex);
+            return demands[fromNode];
+        });
 
-        // Define Transportation Requests.
-        Solver solver = routing.solver();
-        for (int[] request : pickupsDeliveries) {
-            long pickupIndex = manager.nodeToIndex(request[0]);
-            long deliveryIndex = manager.nodeToIndex(request[1]);
-            routing.addPickupAndDelivery(pickupIndex, deliveryIndex);
-            solver.addConstraint(
-                    solver.makeEquality(routing.vehicleVar(pickupIndex), routing.vehicleVar(deliveryIndex)));
-            solver.addConstraint(solver.makeLessOrEqual(
-                    distanceDimension.cumulVar(pickupIndex), distanceDimension.cumulVar(deliveryIndex)));
-        }
+        long[] vehicleCapacities = buses.stream().mapToLong(Bus::getCapacity).toArray();
+        routing.addDimensionWithVehicleCapacity(demandCallbackIndex, 0, vehicleCapacities, true, "Capacity");
 
 
         // Setting first solution heuristic
         RoutingSearchParameters searchParameters = main.defaultRoutingSearchParameters()
                 .toBuilder()
-                .setFirstSolutionStrategy((FirstSolutionStrategy.Value.PARALLEL_CHEAPEST_INSERTION))
+                .setFirstSolutionStrategy(FirstSolutionStrategy.Value.PARALLEL_CHEAPEST_INSERTION)
                 .setLocalSearchMetaheuristic(LocalSearchMetaheuristic.Value.GUIDED_LOCAL_SEARCH)
-                .setTimeLimit(Duration.newBuilder().setSeconds(3).build())
+                .setTimeLimit(Duration.newBuilder().setSeconds(15).build())
                 .build();
+
 
         // Solve the problem
         Assignment solution = routing.solveWithParameters(searchParameters);
@@ -124,12 +107,11 @@ public class RoutingService {
 
     private long[] createDemands(List<Location> locations, List<Student> students) {
         long[] demands = new long[locations.size()];
-        for (int i = 0; i < locations.size(); i++) {
+        demands[0] = 0; //School doesn't drop anything off
+        for (int i = 1; i < locations.size(); i++) {
             Location location = locations.get(i);
-            if (location instanceof School) {
-                demands[i] = students.stream().filter(s -> s.getSchoolId().equals(location.getId())).count();
-            } else if (location instanceof BusStop) {
-                demands[i] = -students.stream().filter(s -> s.getBusStopId().equals(location.getId())).count();
+            if (location instanceof BusStop) {
+                demands[i] = students.stream().filter(s -> s.getBusStopId().equals(location.getId())).count();
             }
         }
         return demands;
@@ -168,25 +150,31 @@ public class RoutingService {
                                                Assignment solution, List<Location> locations) {
         List<List<String>> routes = new ArrayList<>();
         long totalDistance = 0;
+        RoutingDimension distanceDimension = routing.getMutableDimension("Distance");
+        RoutingDimension capacityDimension = routing.getMutableDimension("Capacity");
         for (int i = 0; i < routing.vehicles(); ++i) {
             List<String> route = new ArrayList<>();
             long index = routing.start(i);
             long routeDistance = 0;
+            long routeLoad = solution.max(capacityDimension.cumulVar(index));
             while (!routing.isEnd(index)) {
                 long nodeIndex = manager.indexToNode(index);
                 route.add(locations.get((int) nodeIndex).getId());
                 long previousIndex = index;
                 index = solution.value(routing.nextVar(index));
                 routeDistance += routing.getArcCostForVehicle(previousIndex, index, i);
+                routeLoad = solution.min(capacityDimension.cumulVar(index));
             }
             route.add(locations.get(manager.indexToNode(index)).getId());
             routes.add(route);
             totalDistance += routeDistance;
             System.out.println("Route for vehicle " + i + ": " + String.join(" -> ", route));
             System.out.println("Route distance: " + routeDistance);
+            System.out.println("Final route load: " + routeLoad);
             System.out.println();
         }
         System.out.println("Total distance of all routes: " + totalDistance);
         return routes;
     }
+
 }

@@ -12,6 +12,16 @@ import lombok.AllArgsConstructor;
 public class Bus implements CapacitatedVehicle {
     private String id;
     private String name;
-    private int capacity;
     private String depotId;
+
+    private int capacity;
+
+    public void copyFrom(Bus otherBus) {
+        if (otherBus == null) {
+            throw new IllegalArgumentException("Source Bus cannot be null");
+        }
+        name = otherBus.getName();
+        depotId = otherBus.getDepotId();
+        capacity = otherBus.getCapacity();
+    }
 }
