@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -15,7 +14,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class RoutingProblem {
 
-    private String routingProblemId;
+    private String id;
 
     //Map Object ids to Object
     private final Map<String, School> schools = new HashMap<>();

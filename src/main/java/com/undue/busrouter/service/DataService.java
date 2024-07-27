@@ -214,10 +214,48 @@ public class DataService {
         return student;
     }
 
-    public void deleteStudentWithinRoutingProblem(String routProblemId, String studentId) {
-        RoutingProblem problem = getRoutingProblemById(routProblemId);
+    public void deleteStudentWithinRoutingProblem(String routeProblemId, String studentId) {
+        RoutingProblem problem = getRoutingProblemById(routeProblemId);
         if (problem.getStudents().remove(studentId) == null) {
             throw new ResourceNotFoundException("Student", studentId);
         }
     }
+
+    public RoutingProblem createRoutingProblem() {
+        RoutingProblem problem = new RoutingProblem();
+        problem.setId(UUID.randomUUID().toString());
+        routingProblems.put(problem.getId(), problem);
+        return problem;
+    }
+
+    public RoutingProblem createRoutingProblemFrom(String sourceProblemId) {
+        RoutingProblem sourceProblem = getRoutingProblemById(sourceProblemId);
+        if (sourceProblem == null) {
+            throw new ResourceNotFoundException("RoutingProblem", sourceProblemId);
+        }
+
+        RoutingProblem newProblem = new RoutingProblem();
+        newProblem.setId(UUID.randomUUID().toString());
+/*
+        // Perform a deep copy of the source problem
+        newProblem.setBuses(new HashMap<>(sourceProblem.getBuses()));
+        newProblem.setBusStops(new HashMap<>(sourceProblem.getBusStops()));
+        newProblem.setDepots(new HashMap<>(sourceProblem.getDepots()));
+        newProblem.setSchools(new HashMap<>(sourceProblem.getSchools()));
+        newProblem.setStudents(new HashMap<>(sourceProblem.getStudents()));
+*/
+        routingProblems.put(newProblem.getId(), newProblem);
+        return newProblem;
+    }
+
+    public void deleteRoutingProblem(String id) {
+        if (routingProblems.remove(id) == null) {
+            throw new ResourceNotFoundException("RoutingProblem", id);
+        }
+    }
+
+    public List<RoutingProblem> getAllRoutingProblems() {
+        return new ArrayList<>(routingProblems.values());
+    }
+
 }

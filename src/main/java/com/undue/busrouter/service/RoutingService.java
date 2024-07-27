@@ -17,7 +17,7 @@ public class RoutingService {
         this.dataService = dataService;
         Loader.loadNativeLibraries();
     }
-
+/*
     public List<List<String>> calculateRoutes() {
         // Gather data
         List<Location> locations = new ArrayList<>();
@@ -176,5 +176,5 @@ public class RoutingService {
         System.out.println("Total distance of all routes: " + totalDistance);
         return routes;
     }
-
+*/
 }
