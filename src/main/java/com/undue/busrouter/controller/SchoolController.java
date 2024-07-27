@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/schools")
+@RequestMapping("/api/routing-problems/{routeProblemId}/schools")
 public class SchoolController {
 
     private final DataService dataService;
@@ -20,24 +20,45 @@ public class SchoolController {
     }
 
     @PostMapping
-    public ResponseEntity<School> addSchool(@RequestBody School school) {
-        School addedSchool = dataService.addSchool(school);
+    public ResponseEntity<School> addSchoolWithinRoutingProblem(
+            @PathVariable("routeProblemId") String routeProblemId,
+            @RequestBody School school) {
+        School addedSchool = dataService.addSchoolWithinRoutingProblem(routeProblemId, school);
         return ResponseEntity.ok(addedSchool);
     }
 
+    @PutMapping("/{schoolId}")
+    public ResponseEntity<School> updateSchoolWithinRoutingProblem(
+            @PathVariable("routeProblemId") String routeProblemId,
+            @PathVariable("schoolId") String schoolId,
+            @RequestBody School updatedSchool) {
+        if (!schoolId.equals(updatedSchool.getId())) {
+            return ResponseEntity.badRequest().build();
+        }
+        School school = dataService.updateSchoolWithinRoutingProblem(routeProblemId, updatedSchool);
+        return ResponseEntity.ok(school);
+    }
+
+    @DeleteMapping("/{schoolId}")
+    public ResponseEntity<Void> deleteSchoolWithinRoutingProblem(
+            @PathVariable("routeProblemId") String routeProblemId,
+            @PathVariable("schoolId") String schoolId) {
+        dataService.deleteSchoolWithinRoutingProblem(routeProblemId, schoolId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping
-    public ResponseEntity<List<School>> getAllSchools() {
-        List<School> schools = dataService.getAllSchools();
+    public ResponseEntity<List<School>> getAllSchoolsFromRoutingProblem(
+            @PathVariable("routeProblemId") String routeProblemId) {
+        List<School> schools = dataService.getAllSchoolsFromRoutingProblem(routeProblemId);
         return ResponseEntity.ok(schools);
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<School> getSchool(@PathVariable String id) {
-        School school = dataService.getSchool(id);
-        if (school != null) {
-            return ResponseEntity.ok(school);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    @GetMapping("/{schoolId}")
+    public ResponseEntity<School> getSchoolFromRoutingProblem(
+            @PathVariable("routeProblemId") String routeProblemId,
+            @PathVariable("schoolId") String schoolId) {
+        School school = dataService.getSchoolFromRoutingProblem(routeProblemId, schoolId);
+        return ResponseEntity.ok(school);
     }
 }

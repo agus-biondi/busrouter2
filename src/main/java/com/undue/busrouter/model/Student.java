@@ -14,4 +14,13 @@ public class Student {
     private String name;
     private String busStopId;
     private String schoolId;
+
+    public void copyFrom(Student other) {
+        if (other == null) {
+            throw new IllegalArgumentException("Source Student cannot be null");
+        }
+        this.name = other.getName();
+        this.busStopId = other.getBusStopId();
+        this.schoolId = other.getSchoolId();
+    }
 }

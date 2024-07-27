@@ -15,6 +15,15 @@ public class Depot implements Location {
     private double latitude;
     private double longitude;
 
+    public void copyFrom(Depot other) {
+        if (other == null) {
+            throw new IllegalArgumentException("Source Depot cannot be null");
+        }
+        this.name = other.getName();
+        this.latitude = other.getLatitude();
+        this.longitude = other.getLongitude();
+    }
+
     @Override
     public String toString() {
         return "Depot{" +

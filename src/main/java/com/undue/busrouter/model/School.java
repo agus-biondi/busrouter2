@@ -15,6 +15,15 @@ public class School implements Location {
     private double latitude;
     private double longitude;
 
+    public void copyFrom(School other) {
+        if (other == null) {
+            throw new IllegalArgumentException("Source School cannot be null");
+        }
+        this.name = other.getName();
+        this.latitude = other.getLatitude();
+        this.longitude = other.getLongitude();
+    }
+
     @Override
     public String toString() {
         return "School{" +
