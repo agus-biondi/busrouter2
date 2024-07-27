@@ -34,7 +34,7 @@ public class DataService {
         return new ArrayList<>(problem.getBuses().values());
     }
 
-    public Bus addBusToRoutingProblem(String routingProblemId, Bus bus) {
+    public Bus addBusWithinRoutingProblem(String routingProblemId, Bus bus) {
         if (bus == null) {
             throw new IllegalArgumentException("Bus cannot be null");
         }
@@ -44,7 +44,7 @@ public class DataService {
         return bus;
     }
 
-    public Bus updateBusForRoutingProblem(String routingProblemId, Bus updatedBus) {
+    public Bus updateBusWithinRoutingProblem(String routingProblemId, Bus updatedBus) {
         if (updatedBus == null) {
             throw new IllegalArgumentException("Bus cannot be null");
         }
@@ -53,13 +53,53 @@ public class DataService {
         return bus;
     }
 
-    public void deleteBusFromRoutingProblem(String routingProblemId, String busId) {
+    public void deleteBusWithinRoutingProblem(String routingProblemId, String busId) {
         RoutingProblem problem = getRoutingProblemById(routingProblemId);
         if (problem.getBuses().remove(busId) == null) {
             throw new ResourceNotFoundException("Bus", busId);
         }
     }
 
+
+    public BusStop getBusStopFromRoutingProblem(String routingProblemId, String busStopId) {
+        RoutingProblem problem = getRoutingProblemById(routingProblemId);
+        BusStop busStop = problem.getBusStops().get(busStopId);
+        if (busStop == null) {
+            throw new ResourceNotFoundException("BusStop", busStopId);
+        }
+        return busStop;
+    }
+
+    public List<BusStop> getAllBusStopsFromRoutingProblem(String routingProblemId) {
+        RoutingProblem problem = getRoutingProblemById(routingProblemId);
+        return new ArrayList<>(problem.getBusStops().values());
+    }
+
+    public BusStop addBusStopWithinRoutingProblem(String routingProblemId, BusStop busStop) {
+        if (busStop == null) {
+            throw new IllegalArgumentException("BusStop cannot be null");
+        }
+        RoutingProblem problem = getRoutingProblemById(routingProblemId);
+        busStop.setId(UUID.randomUUID().toString());
+        problem.getBusStops().put(busStop.getId(), busStop);
+        return busStop;
+    }
+
+    public BusStop updateBusStopWithinRoutingProblem(String routingProblemId, BusStop updatedBusStop) {
+        if (updatedBusStop == null) {
+            throw new IllegalArgumentException("BusStop cannot be null");
+        }
+        BusStop busStop = getBusStopFromRoutingProblem(routingProblemId, updatedBusStop.getId());
+        busStop.copyFrom(updatedBusStop);
+        return busStop;
+    }
+
+    public void deleteBusStopWithinRoutingProblem(String routingProblemId, String busStopId) {
+        RoutingProblem problem = getRoutingProblemById(routingProblemId);
+        if (problem.getBusStops().remove(busStopId) == null) {
+            throw new ResourceNotFoundException("BusStop", busStopId);
+        }
+    }
 
 
 

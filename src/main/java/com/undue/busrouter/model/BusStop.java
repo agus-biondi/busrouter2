@@ -16,6 +16,16 @@ public class BusStop implements Location {
     private double longitude;
     private int studentCount;
 
+    public void copyFrom(BusStop other) {
+        if (other == null) {
+            throw new IllegalArgumentException("Source BusStop cannot be null");
+        }
+        this.name = other.getName();
+        this.latitude = other.getLatitude();
+        this.longitude = other.getLongitude();
+        this.studentCount = other.getStudentCount();
+    }
+
     @Override
     public String toString() {
         return "BusStop{" +
@@ -26,4 +36,5 @@ public class BusStop implements Location {
                 ", studentCount=" + studentCount +
                 '}';
     }
+
 }

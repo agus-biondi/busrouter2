@@ -20,15 +20,39 @@ public class BusController {
     }
 
     @PostMapping
-    public ResponseEntity<Bus> addBusToRoutingProblem(
+    public ResponseEntity<Bus> addBusWithinRoutingProblem(
             @PathVariable("routeProblemId") String routeProblemId,
             @RequestBody Bus bus) {
-        Bus addedBus = dataService.addBusToRoutingProblem(routeProblemId, bus);
+        Bus addedBus = dataService.addBusWithinRoutingProblem(routeProblemId, bus);
         return ResponseEntity.ok(addedBus);
     }
 
+    @PutMapping("/{busId}")
+    public ResponseEntity<Bus> updateBusWithinRoutingProblem(
+            @PathVariable("routeProblemId") String routeProblemId,
+            @PathVariable("busId") String busId,
+            @RequestBody Bus updatedBus) {
+
+        if(!busId.equals(updatedBus.getId())) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Bus addedBus = dataService.updateBusWithinRoutingProblem(routeProblemId, updatedBus);
+        return ResponseEntity.ok(addedBus);
+
+    }
+
+    @DeleteMapping("/{busId}")
+    public ResponseEntity<Void> deleteBusWithinRoutingProblem(
+            @PathVariable("routeProblemId") String routeProblemId,
+            @PathVariable("busId") String busId) {
+        dataService.deleteBusWithinRoutingProblem(routeProblemId, busId);
+        return ResponseEntity.noContent().build();
+    }
+
+
     @GetMapping
-    public ResponseEntity<List<Bus>> getAllBusesForRoutingProblemId(
+    public ResponseEntity<List<Bus>> getAllBusesFromRoutingProblemId(
             @PathVariable("routeProblemId") String routeProblemId) {
         List<Bus> buses = dataService.getAllBusesFromRoutingProblem(routeProblemId);
         return ResponseEntity.ok(buses);
@@ -43,28 +67,5 @@ public class BusController {
         return ResponseEntity.ok(bus);
 
     }
-    @PutMapping("/{busId}")
-    public ResponseEntity<Bus> updateBusForRoutingProblem(
-            @PathVariable("routeProblemId") String routeProblemId,
-            @PathVariable("busId") String busId,
-            @RequestBody Bus updatedBus) {
-
-        if(!busId.equals(updatedBus.getId())) {
-            return ResponseEntity.badRequest().build();
-        }
-        Bus addedBus = dataService.updateBusForRoutingProblem(routeProblemId, updatedBus);
-        return ResponseEntity.ok(addedBus);
-
-    }
-
-    @DeleteMapping("/{busId}")
-    public ResponseEntity<Void> deleteBusFromRoutingProblem(
-            @PathVariable("routeProblemId") String routeProblemId,
-            @PathVariable("busId") String busId) {
-        dataService.deleteBusFromRoutingProblem(routeProblemId, busId);
-        return ResponseEntity.ok(null);
-    }
-
-
 
 }
